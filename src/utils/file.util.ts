@@ -1,13 +1,15 @@
+import type { ExtensionContext } from "vscode";
 import type { RecordConfig } from "../typings/common.typing";
-import { readFileSync, writeFileSync } from "node:fs";
 import { destr } from "destr";
 
-function readConfig(configPath: string): RecordConfig {
-  return destr(readFileSync(configPath).toString());
+function readConfig(configPath: string, context: ExtensionContext): RecordConfig {
+  const r: RecordConfig = destr(context.globalState.get<string>(configPath)?.toString() ?? "{}");
+  console.warn(r);
+  return r;
 }
 
-function writeConfig(configPath: string, config: RecordConfig): void {
-  writeFileSync(configPath, JSON.stringify(config, null, 4));
+async function writeConfig(configPath: string, config: RecordConfig, context: ExtensionContext) {
+  await context.globalState.update(configPath, JSON.stringify(config));
 }
 
 export { readConfig, writeConfig };

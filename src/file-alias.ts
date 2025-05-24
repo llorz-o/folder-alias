@@ -1,9 +1,8 @@
-import type { Uri } from "vscode";
+import type { ExtensionContext, Uri } from "vscode";
 import type { UseConfigReturn } from "./hooks/useConfig";
-import { useEventEmitter, useFsWatcher } from "reactive-vscode";
-import { FileDecoration, RelativePattern, window } from "vscode";
+import { useEventEmitter } from "reactive-vscode";
+import { FileDecoration, window } from "vscode";
 import { useConfig } from "./hooks/useConfig";
-import { logger } from "./utils/logger.util";
 
 // eslint-disable-next-line ts/ban-ts-comment
 // @ts-expect-error
@@ -18,14 +17,8 @@ FileDecoration.validate = (d: FileDecoration): void => {
 export interface UseFileAliasReturn extends UseConfigReturn {
   changeEmitter: (uri: Uri | Uri[]) => void;
 }
-export function useFileAlias(uri: Uri): UseFileAliasReturn {
-  const { publicConfig, privateConfig, configFile, resetConfig, savePublic, savePrivate } = useConfig(uri.fsPath);
-  const watcher = useFsWatcher(new RelativePattern(uri, "**/*"));
-  watcher.onDidChange((uri) => {
-    if (uri.fsPath.endsWith("folder-alias.json")) {
-      resetConfig();
-    }
-  });
+export function useFileAlias(uri: Uri, context: ExtensionContext): UseFileAliasReturn {
+  const { publicConfig, configFile, savePublic } = useConfig(uri.fsPath, context);
   function getFileDecoration(_uri: Uri) {
     const file = _uri.toString().replace(`${uri.toString()}/`, "");
     if (configFile.value[file]) {
@@ -41,10 +34,7 @@ export function useFileAlias(uri: Uri): UseFileAliasReturn {
   return {
     changeEmitter: (uri: Uri | Uri[]) => changeEmitter.fire(uri),
     publicConfig,
-    privateConfig,
     configFile,
-    resetConfig,
     savePublic,
-    savePrivate,
   };
 }

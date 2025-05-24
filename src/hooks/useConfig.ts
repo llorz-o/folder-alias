@@ -1,4 +1,5 @@
 import type { ComputedRef, Ref } from "reactive-vscode";
+import type { ExtensionContext } from "vscode";
 import type { RecordConfig } from "../typings/common.typing";
 import { merge } from "lodash-es";
 import { join } from "pathe";
@@ -7,38 +8,22 @@ import { readConfig, writeConfig } from "../utils/file.util";
 
 export interface UseConfigReturn {
   publicConfig: Ref<RecordConfig, RecordConfig>;
-  privateConfig: Ref<RecordConfig, RecordConfig>;
   configFile: ComputedRef<RecordConfig>;
-  resetConfig: () => void;
-  savePublic: () => void;
-  savePrivate: () => void;
+  savePublic: () => Promise<void>;
 }
 
-export function useConfig(fileDir: string): UseConfigReturn {
+export function useConfig(fileDir: string, context: ExtensionContext): UseConfigReturn {
   const configPath = join(fileDir, "folder-alias.json");
-  const privateConfigPath = join(fileDir, "private-folder-alias.json");
-  const publicConfig = ref(readConfig(configPath));
-  const privateConfig = ref(readConfig(privateConfigPath));
-  const configFile = computed<RecordConfig>(() => merge(publicConfig.value, privateConfig.value));
-  function resetConfig() {
-    publicConfig.value = readConfig(configPath);
-    privateConfig.value = readConfig(privateConfigPath);
-  }
+  const publicConfig = ref(readConfig(configPath, context));
+  const configFile = computed<RecordConfig>(() => merge(publicConfig.value));
 
-  function savePublic() {
-    writeConfig(configPath, publicConfig.value);
-  }
-
-  function savePrivate() {
-    writeConfig(privateConfigPath, privateConfig.value);
+  async function savePublic() {
+    await writeConfig(configPath, publicConfig.value, context);
   }
 
   return {
     publicConfig,
-    privateConfig,
     configFile,
-    resetConfig,
     savePublic,
-    savePrivate,
   };
 }
